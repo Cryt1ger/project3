@@ -3,6 +3,7 @@ import plotly.express as px
 import requests
 import pandas as pd
 from flask import Flask, request, render_template
+import plotly.graph_objects as go
 
 # Инициализация Flask и Dash
 server = Flask(__name__)
@@ -41,7 +42,7 @@ def get_weather_by_city(city, days=1):
         
     except Exception as e:
         print(f"Ошибка для города {city}: {str(e)}")
-        return []
+        return ...
 
 # Flask маршруты
 @server.route('/')
@@ -84,6 +85,8 @@ app.layout = html.Div([
         html.Button('Обновить', id='update-button', n_clicks=0),
     ], style={'margin': '20px'}),
     
+    dcc.Graph(id='route-map'),
+    
     dcc.Graph(id='temperature-graph'),
     dcc.Graph(id='wind-graph'),
     dcc.Graph(id='rain-graph'),
@@ -96,25 +99,37 @@ from dash.dependencies import Input, Output, State
 @app.callback(
     [Output('temperature-graph', 'figure'),
      Output('wind-graph', 'figure'),
-     Output('rain-graph', 'figure')],
+     Output('rain-graph', 'figure'),
+     Output('route-map', 'figure')],
     [Input('update-button', 'n_clicks')],
     [State('cities-input', 'value'),
      State('days-dropdown', 'value')]
 )
 def update_graphs(n_clicks, cities_string, days):
     if not cities_string or n_clicks == 0:
-        return {}, {}, {}
+        return {}, {}, {}, {}
     
     cities = [city.strip() for city in cities_string.split(',')]
     all_data = []
+    coordinates = []
     
     for city in cities:
         forecast = get_weather_by_city(city, days=days)
         all_data.extend(forecast)
+        
+        params = {"q": city, "appid": API_KEY, "units": "metric"}
+        response = requests.get("http://api.openweathermap.org/data/2.5/weather", params=params)
+        data = response.json()
+        coordinates.append({
+            'city': city,
+            'lat': data['coord']['lat'],
+            'lon': data['coord']['lon'],
+            'temp': data['main']['temp']
+        })
     
     df = pd.DataFrame(all_data)
     if df.empty:
-        return {}, {}, {}
+        return {}, {}, {}, {}
     
     temp_fig = px.line(df, x='date', y='temperature', color='city',
                        title=f'Температура (°C) - Прогноз на {days} дней')
@@ -137,7 +152,45 @@ def update_graphs(n_clicks, cities_string, days):
         yaxis_title="Вероятность осадков (%)"
     )
     
-    return temp_fig, wind_fig, rain_fig
+    map_fig = go.Figure()
+    
+    map_fig.add_trace(go.Scattermapbox(
+        mode='lines+markers',
+        lon=[coord['lon'] for coord in coordinates],
+        lat=[coord['lat'] for coord in coordinates],
+        marker={'size': 10},
+        line={'width': 2},
+        name='Маршрут'
+    ))
+    
+    for coord in coordinates:
+        map_fig.add_trace(go.Scattermapbox(
+            mode='markers+text',
+            lon=[coord['lon']],
+            lat=[coord['lat']],
+            marker={
+                'size': 15,
+                'color': 'red',
+                'symbol': 'circle'
+            },
+            text=f"{coord['city']}: {coord['temp']}°C",
+            textposition="top center",
+            name=coord['city']
+        ))
+    
+    map_fig.update_layout(
+        mapbox={
+            'style': "carto-darkmatter"  ,
+            'center': {'lon': coordinates[0]['lon'], 
+                      'lat': coordinates[0]['lat']},
+            'zoom': 5
+        },
+        margin={'l': 0, 'r': 0, 'b': 0, 't': 30},
+        height=600,
+        title='Маршрут и текущая температура'
+    )
+    
+    return temp_fig, wind_fig, rain_fig, map_fig
 
 if __name__ == '__main__':
     app.run_server(debug=True, port=5000)
