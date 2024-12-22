@@ -44,10 +44,6 @@ def get_weather_by_city(city, days=1):
         print(f"Ошибка для города {city}: {str(e)}")
         return ...
 
-# Flask маршруты
-@server.route('/')
-def index():
-    return render_template('index.html')
 
 @server.route('/check_weather', methods=['POST'])
 def check_weather():
@@ -193,4 +189,4 @@ def update_graphs(n_clicks, cities_string, days):
     return temp_fig, wind_fig, rain_fig, map_fig
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=5000)
+    app.run_server(debug=0, port=5000)
