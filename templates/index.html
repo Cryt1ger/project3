@@ -1,19 +1,31 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Проверка погоды</title>
+    <title>Прогноз погоды для маршрута</title>
 </head>
 <body>
-    <h1>Проверка погодных условий</h1>
+    <h1>Прогноз погоды для маршрута</h1>
     <form method="POST" action="/check_weather">
-        <label for="start">Начальная точка:</label>
-        <input type="text" id="start" name="start" required>
-        <br><br>
-        <label for="end">Конечная точка:</label>
-        <input type="text" id="end" name="end" required>
-        <br><br>
-        <button type="submit">Проверить погоду</button>
+        <div>
+            <label for="start">Начальная точка:</label>
+            <input type="text" id="start" name="start" required>
+        </div>
+        <div>
+            <label for="end">Конечная точка:</label>
+            <input type="text" id="end" name="end" required>
+        </div>
+        <div>
+            <label for="forecast_days">Прогноз на:</label>
+            <select id="forecast_days" name="forecast_days">
+                <option value="1">1 день</option>
+                <option value="2">2 дня</option>
+                <option value="3">3 дня</option>
+                <option value="4">4 дня</option>
+            </select>
+        </div>
+        <button type="submit">Получить прогноз</button>
     </form>
 </body>
+</html>
